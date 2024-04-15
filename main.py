@@ -1,25 +1,14 @@
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
-import json
+from Bot_Vk import VkBot
 
-admin = int(218357667)
+my_bot = VkBot()
 
-token = (
-    'vk1.a.ikAzLDwaYyt7Nr8c1Le7mWQVGyV9viLNxmvpGPiITZZtNFStz67hoSezzdz6gKOkIlBEWu2HiRjg6CNLuZNxCtEoWozxSvKCh3Jbv7i4'
-    'ejpDXqDTqrt0lPe_bhGiHvj4IZIVYNOt33u8G2IZDATKO3xViGi25bMOr7wH4HHJWN1-iMMSzPOmeqr_hR2S1i-JYw1ueLwx0iQHFYIW-_Z_Ow')
+vk_session = vk_api.VkApi(token=VkBot.token)  # Создали сессию для работы а именно авторизовали бота с помощью токена
+longpoll = VkLongPoll(vk_session)  # Создали экз. класса для ослеживания всех входящих уведомдений от нашего бота
 
-vk_session = vk_api.VkApi(token=token)
-longpoll = VkLongPoll(vk_session)
 
-keyboard = VkKeyboard(one_time=True)
-keyboard.add_button('Вступить в беседу', VkKeyboardColor.SECONDARY)
-keyboard.add_line()
-keyboard.add_button('Партнерство', VkKeyboardColor.POSITIVE)
-keyboard.add_line()
-keyboard.add_button('Предложения/сотрудничество', VkKeyboardColor.POSITIVE)
-
-keyboard = keyboard.get_keyboard()
+keyboard = my_bot.create_keyboard().get_keyboard()  # Преобразование в json - формат
 
 vk = vk_session.get_api()
 
@@ -28,7 +17,6 @@ for event in longpoll.listen():
         message = event.text.lower()
         user_id = event.user_id
         user_info = vk.users.get(user_ids=user_id, fields=['domain'])
-        print(user_info)
         # Обработка полученного сообщения
         if message:
             vk.messages.send(user_id=user_id,
