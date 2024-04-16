@@ -12,12 +12,14 @@ class VkBot:
         'JYw1ueLwx0iQHFYIW-_Z_Ow')
 
     collect_butt = []
+    user_incl_chat = []
 
-    def __init__(self):
+    def __init__(self, vk_session: vk_api.vk_api.VkApiMethod):
         self.collect_butt.append(ButtonForBot(color=VkKeyboardColor.POSITIVE, label='Вступить в беседу'))
         self.collect_butt.append(ButtonForBot(color=VkKeyboardColor.SECONDARY, label='Партнерство'))
         self.collect_butt.append(
             ButtonForBot(color=VkKeyboardColor.SECONDARY, label='Предложения/сотрудничество', last=True))
+        self.vk_session = vk_session
 
     def create_keyboard(self):
         '''Создание клавиатуры бота. Обращение к атрибуту экземпляра класса VkBot
@@ -30,6 +32,39 @@ class VkBot:
             else:
                 my_keyboard.add_button(butt.label, color=butt.color)
         return my_keyboard
+
+    def create_keyboard_for_admin(self):
+        pass
+
+    @staticmethod
+    def get_url_profile(user_id):
+        return f"https://vk.com/id{user_id}"
+
+    def check_command(self, message):
+        for butt in self.collect_butt:
+            if message == butt.label:
+                return True
+        return False
+
+    def app_in_chat(self, user_id):
+        if user_id not in self.user_incl_chat:
+            self.user_incl_chat.append(user_id)
+            self.vk_session.messages.send(
+                user_id=user_id,
+                message='жди ответа',
+                random_id=0,
+                keyboard=self.create_keyboard().get_keyboard()
+            )
+        else:
+            self.vk_session.messages.send(
+                user_id=user_id,
+                message='Ожидай долбаеб',
+                random_id=0,
+                keyboard=self.create_keyboard().get_keyboard()
+            )
+
+    def start_longpoll(self):
+        pass
 
 
 class ButtonForBot:
