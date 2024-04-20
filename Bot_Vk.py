@@ -4,8 +4,26 @@ from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 import bs4
 
 
+class ButtonForBot:
+    '''Кнопка для клавиатуры бота'''
+    color = None
+    label = None
+    butt_type = ''
+
+    def __init__(self, color, label, butt_type, link='', last=False):
+        self.color = color
+        self.label = label
+        self.last = last
+        self.butt_type = butt_type
+        if butt_type == 'Link Button' and not link:
+            raise TypeError('кнопка типа Link Button не может быть созданна без ссылки')
+        else:
+            self.link = link
+
+
 class VkBot:
-    id_admin = 218357667
+    '''Бот для ВК'''
+    id_admin = 377265767
     token = (
         'vk1.a.ikAzLDwaYyt7Nr8c1Le7mWQVGyV9viLNxmvpGPiITZZtNFStz67hoSezzdz6gKOkIlBEWu2HiRjg6CNLuZNxCtEoWozxSvKCh3Jb'
         'v7i4ejpDXqDTqrt0lPe_bhGiHvj4IZIVYNOt33u8G2IZDATKO3xViGi25bMOr7wH4HHJWN1-iMMSzPOmeqr_hR2S1i-'
@@ -15,11 +33,23 @@ class VkBot:
     user_incl_chat = []
 
     def __init__(self, vk_session: vk_api.vk_api.VkApiMethod):
-        self.collect_butt.append(ButtonForBot(color=VkKeyboardColor.POSITIVE, label='Вступить в беседу'))
-        self.collect_butt.append(ButtonForBot(color=VkKeyboardColor.SECONDARY, label='Партнерство'))
         self.collect_butt.append(
-            ButtonForBot(color=VkKeyboardColor.SECONDARY, label='Предложения/сотрудничество', last=True))
+            ButtonForBot(color=VkKeyboardColor.POSITIVE, label='Вступить в беседу', butt_type='Text Button'))
+        self.collect_butt.append(
+            ButtonForBot(color=VkKeyboardColor.SECONDARY, label='Наши партнеры', butt_type='Link Button',
+                         link='https://vk.com/topic-222161246_49381075'))
+        self.collect_butt.append(
+            ButtonForBot(color=VkKeyboardColor.SECONDARY, label='предложения/реклама', butt_type='Link Button',
+                         link='https://m.vk.com/write-222161246',
+                         last=True))
         self.vk_session = vk_session
+
+    def keyboard_add_button(self, keyboard: vk_api.keyboard.VkKeyboard, button: ButtonForBot, link: str):
+        '''Функция определяет тип кнопки и в соответствии с ним добавляет ее в клавиатуру'''
+        if button.butt_type == 'Link Button':
+            keyboard.add_openlink_button(button.label, link=f'https://vk.com/im?sel={self.id_admin}')
+        elif button.butt_type == 'Text Button':
+            keyboard.add_button(button.label, color=button.color)
 
     def create_keyboard(self):
         '''Создание клавиатуры бота. Обращение к атрибуту экземпляра класса VkBot
@@ -27,51 +57,50 @@ class VkBot:
         my_keyboard = VkKeyboard(one_time=True)  # Создали клавиатуру для бота
         for butt in self.collect_butt:
             if not butt.last:
-                my_keyboard.add_button(butt.label, color=butt.color)
+                self.keyboard_add_button(my_keyboard, butt,
+                                         link=butt.link)  # Кнопки добавляются на в зависимости от их типа
                 my_keyboard.add_line()
             else:
-                my_keyboard.add_button(butt.label, color=butt.color)
-        return my_keyboard
+                self.keyboard_add_button(my_keyboard, butt, link=butt.link)
+        return my_keyboard.get_keyboard()  # Преобразование в json - формат
 
     def create_keyboard_for_admin(self):
         pass
 
     @staticmethod
     def get_url_profile(user_id):
+        '''Возвращает ссылку на профиль человека'''
         return f"https://vk.com/id{user_id}"
 
     def check_command(self, message):
+        '''Проверяет есть ли команда отправленная в чат боту в списке разрешенных.
+        Возвращает True если команда есть.'''
         for butt in self.collect_butt:
             if message == butt.label:
                 return True
         return False
 
     def app_in_chat(self, user_id):
-        if user_id not in self.user_incl_chat:
+        '''Функция проверяет и добавляет в user_incl_chat (Активные заявки) id пользователя
+        если его там нет и отправляет сообщение пользовател в зависимости от того есть он там
+        или нет. Возвращает True если пользователя нет.'''
+        flag = user_id not in self.user_incl_chat
+        if flag:
             self.user_incl_chat.append(user_id)
             self.vk_session.messages.send(
                 user_id=user_id,
-                message='жди ответа',
+                message='Ожидайте, Ваша заявка на рассмотрении',
                 random_id=0,
-                keyboard=self.create_keyboard().get_keyboard()
+                keyboard=self.create_keyboard()
             )
         else:
             self.vk_session.messages.send(
                 user_id=user_id,
                 message='Ожидай долбаеб',
                 random_id=0,
-                keyboard=self.create_keyboard().get_keyboard()
+                keyboard=self.create_keyboard()
             )
+        return flag
 
     def start_longpoll(self):
         pass
-
-
-class ButtonForBot:
-    color = None
-    label = None
-
-    def __init__(self, color, label, last=False):
-        self.color = color
-        self.label = label
-        self.last = last

@@ -8,9 +8,7 @@ longpoll = VkLongPoll(vk_session)  # Создали экз. класса для 
 my_bot = VkBot(vk_session.get_api())
 vk = my_bot.vk_session
 
-keyboard = my_bot.create_keyboard().get_keyboard()  # Преобразование в json - формат
-
-
+keyboard = my_bot.create_keyboard()
 for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW and event.to_me:
         message = event.text
@@ -22,9 +20,7 @@ for event in longpoll.listen():
                              random_id=0,
                              keyboard=keyboard)
         if message == 'Вступить в беседу':
-            my_bot.app_in_chat(user_id)
-
-
-            # vk.messages.send(user_id=my_bot.id_admin,
-            #                  message=f'{my_bot.get_url_profile(user_id)}, хочет вступить в беседу',
-            #                  random_id=0)
+            if my_bot.app_in_chat(user_id):
+                vk.messages.send(user_id=my_bot.id_admin,
+                                 message=f'{my_bot.get_url_profile(user_id)}, хочет вступить в беседу',
+                                 random_id=0)
