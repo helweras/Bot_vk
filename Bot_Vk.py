@@ -1,7 +1,7 @@
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
-import bs4
+from random import choice
 
 
 class ButtonForBot:
@@ -23,18 +23,29 @@ class ButtonForBot:
 
 class VkBot:
     '''Бот для ВК'''
-    id_admin = 377265767
+    funny_answer = ('Ожидайте, скорее всего администраторы жгут резину на стадионе',
+                    'Подождите еще немного , скорее всего ваше сообщение везет девушка на Матизе',
+                    'Ожидайте, быстрее будет только ваш бывший',
+                    'Если еще раз нажмешь на эту кнопку, то на месте сиерры-кабриолета можешь оказаться именно ты',
+                    'Ожидайте, мы не 2jz чтобы рассмотреть вашу заявку от 0-100 за 3 секунды',
+                    'Еще не рассмотрели, ведь ты не бмв, в которой закончилось масло, чтобы сразу на тебя реагировать')
+    id_admin = 377265761
     token = (
         'vk1.a.ikAzLDwaYyt7Nr8c1Le7mWQVGyV9viLNxmvpGPiITZZtNFStz67hoSezzdz6gKOkIlBEWu2HiRjg6CNLuZNxCtEoWozxSvKCh3Jb'
         'v7i4ejpDXqDTqrt0lPe_bhGiHvj4IZIVYNOt33u8G2IZDATKO3xViGi25bMOr7wH4HHJWN1-iMMSzPOmeqr_hR2S1i-'
         'JYw1ueLwx0iQHFYIW-_Z_Ow')
 
     collect_butt = []
-    user_incl_chat = []
+    user_incl_chat = [1, 2, 3, 4, 5, 6, 7, 8]
 
     def __init__(self, vk_session: vk_api.vk_api.VkApiMethod):
         self.collect_butt.append(
             ButtonForBot(color=VkKeyboardColor.POSITIVE, label='Вступить в беседу', butt_type='Text Button'))
+        self.collect_butt.append(
+            ButtonForBot(color=VkKeyboardColor.NEGATIVE,
+                         label='Мы в других соц сетях',
+                         butt_type='Text Button')
+        )
         self.collect_butt.append(
             ButtonForBot(color=VkKeyboardColor.SECONDARY, label='Наши партнеры', butt_type='Link Button',
                          link='https://vk.com/topic-222161246_49381075'))
@@ -58,14 +69,71 @@ class VkBot:
         for butt in self.collect_butt:
             if not butt.last:
                 self.keyboard_add_button(my_keyboard, butt,
-                                         link=butt.link)  # Кнопки добавляются на в зависимости от их типа
+                                         link=butt.link)  # Кнопки добавляются в зависимости от их типа
                 my_keyboard.add_line()
             else:
                 self.keyboard_add_button(my_keyboard, butt, link=butt.link)
         return my_keyboard.get_keyboard()  # Преобразование в json - формат
 
-    def create_keyboard_for_admin(self):
-        pass
+    @staticmethod
+    def create_keyboard_for_admin():
+        admin_keyboard = VkKeyboard(one_time=True)
+        admin_keyboard.add_button(label='Посмотреть заявки', color=VkKeyboardColor.POSITIVE)
+        return admin_keyboard.get_keyboard()
+
+    def answer_for_admin(self):
+        if self.user_incl_chat:
+            self.vk_session.messages.send(
+                user_id=self.id_admin,
+                message=f'Всего заявок {len(self.user_incl_chat)}',
+                random_id=0,
+                keyboard=self.create_keyboard_for_admin()
+            )
+            for user in self.user_incl_chat:
+                self.vk_session.messages.send(
+                    user_id=self.id_admin,
+                    message=self.get_url_profile(user),
+                    random_id=0,
+                    keyboard=self.create_keyboard_for_admin()
+                )
+        else:
+            self.vk_session.messages.send(
+                user_id=self.id_admin,
+                message='Заявок нет',
+                random_id=0,
+                keyboard=self.create_keyboard_for_admin()
+            )
+
+    def answer_for_all(self, messages: str, user_id):
+        if user_id == self.id_admin:
+            if messages == 'Посмотреть заявки':
+                self.answer_for_admin()
+                self.user_incl_chat.clear()
+            else:
+                self.vk_session.messages.send(
+                    user_id=self.id_admin,
+                    message='Такой команды нет',
+                    random_id=0,
+                    keyboard=self.create_keyboard_for_admin()
+                )
+        else:
+            if not self.check_command(messages):
+                self.vk_session.messages.send(user_id=user_id,
+                                              message='такой команды нет',
+                                              random_id=0,
+                                              keyboard=self.create_keyboard())
+            if messages == 'Вступить в беседу':
+                self.app_in_chat(user_id)
+            elif messages == 'Мы в других соц сетях':
+                inst = 'Инстаграм https://www.instagram.com/autolady_39?igsh=YzVkODRmOTdmMw==&utm_source=qr'
+                self.vk_session.messages.send(user_id=user_id,
+                                              message='Телеграмм канал https://t.me/autolady39',
+                                              random_id=0,
+                                              keyboard=self.create_keyboard())
+                self.vk_session.messages.send(user_id=user_id,
+                                              message=inst,
+                                              random_id=0,
+                                              keyboard=self.create_keyboard())
 
     @staticmethod
     def get_url_profile(user_id):
@@ -96,7 +164,7 @@ class VkBot:
         else:
             self.vk_session.messages.send(
                 user_id=user_id,
-                message='Ожидай долбаеб',
+                message=choice(self.funny_answer),
                 random_id=0,
                 keyboard=self.create_keyboard()
             )
